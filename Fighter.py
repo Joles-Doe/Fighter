@@ -29,7 +29,7 @@ class Fighter(object):
         self.movement_speed = 7
 
         self.attacking = False
-        self.attacking_cooldown = 300
+        self.attacking_cooldown = 450
         self.attacking_timer = pygame.time.get_ticks()
 
         self.hit = False
@@ -42,6 +42,7 @@ class Fighter(object):
         self.platform_location = 400
         
         self.player = player
+        self.health = 100
 
         self.current_animation = 0
         self.current_animation_step = 0
@@ -62,7 +63,7 @@ class Fighter(object):
             animation_list.append(cropped_image)
         return animation_list
 
-    def action(self, surface, enemy_hitbox):
+    def action(self, surface, enemy_hitbox, enemy_attacking):
         playerinput_jump = [pygame.K_w, pygame.K_UP]
         playerinput_left = [pygame.K_a, pygame.K_LEFT]
         playerinput_right = [pygame.K_d, pygame.K_RIGHT]
@@ -74,9 +75,11 @@ class Fighter(object):
 
         # hit
         if self.hit == True: # check if character has been hit
-            self.current_animation = 7 # change to hit animation
-            self.hit = False # reset the hit variable
-            self.dohit = True # extra variable necessary in order to complete the animation and not be stuck in a constant hit loop
+            if self.dohit == False:
+                self.current_animation = 7 # change to hit animation
+                self.hit = False # reset the hit variable
+                self.dohit = True # extra variable necessary in order to complete the animation and not be stuck in a constant hit loop
+                self.health -= 10
 
         # attack
         if pygame.time.get_ticks() - self.attacking_timer > self.attacking_cooldown: # check if the attack cooldown has finished
@@ -160,10 +163,14 @@ class Fighter(object):
         # set sprite
         self.animation_done = self.current_animation_step > self.fighter_information[f'{self.fighter_name}_sprite_steps'][self.current_animation] - 1 # check if the animation is finished
         if self.animation_done == True:
-            if self.attacking == True or self.dohit == True:
-                self.dohit = False
+            if self.attacking == True:
                 self.current_animation = 0 # change to idle animation
             self.current_animation_step = 0 # reset the animation step to 0
+        if enemy_attacking == False and self.dohit == True:
+            self.hit = False
+            self.dohit = False
+            self.current_animation = 0
+            
 
         sprite_surface = self.animations[self.current_animation][self.current_animation_step] # grabs the current frame
         sprite_surface = pygame.transform.flip(sprite_surface, self.flip, False) # flips the frame if necessary
@@ -173,7 +180,7 @@ class Fighter(object):
             self.update_tick = pygame.time.get_ticks() # reset the animation timer
 
         # draw
-        pygame.draw.rect(surface, self.hitbox_color, self.hitbox)
+        # pygame.draw.rect(surface, self.hitbox_color, self.hitbox) # draws the character's hitbox
         if self.attacking == True: # check if the character is attacking
             if self.animation_done == True: # check if the attacking animation has finished
                 self.attacking_timer = pygame.time.get_ticks() # reset the cooldown timer
@@ -188,7 +195,7 @@ class Fighter(object):
                     self.attacking_hitbox.left = self.hitbox.left
 
                 self.attacking_hitbox.bottom = self.hitbox.bottom # the attacking hitbox is not allowed to fly to space
-                pygame.draw.rect(surface, self.hitbox_color, self.attacking_hitbox) # draws the attacking hitbox
+                # pygame.draw.rect(surface, self.hitbox_color, self.attacking_hitbox) # draws the attacking hitbox
 
         sprite_rect = sprite_surface.get_rect() # grabs the Rect of the sprite
         sprite_rect.center = (self.hitbox.center[0] + self.fighter_information[f'{self.fighter_name}_offset'][0], self.hitbox.center[1] + self.fighter_information[f'{self.fighter_name}_offset'][1]) # offsets the sprite in order for it to be in it's hitbox
@@ -205,6 +212,10 @@ swidth, sheight = 740, 740
 screen = pygame.display.set_mode((swidth, sheight)) # width, height of the screen
 pygame.scrap.init() ### Scrap can only be initialised after the display set mode command has been done
 # pygame.key.set_repeat(500, 50) # allows keys to be held
+
+
+fontstyle = pygame.font.SysFont(None, 50) # Defaults to a size 50 font
+color = (255, 255, 255)
 
 clock = pygame.time.Clock()
 FPS = 60
@@ -252,7 +263,7 @@ fighter_information = {
 player1 = Fighter('nomad', fighter_information, player=0)
 player1.positionx = 200
 
-player2 = Fighter('huntress', fighter_information, player=1)
+player2 = Fighter('squire', fighter_information, player=1)
 player2.positionx = 400
 player2.hitbox_color = (255, 0, 255)
 
@@ -262,14 +273,20 @@ while (game_active == True):
 
     screen.blit(current_background, current_background_rect) # add the background 
 
-    player1.action(screen, player2.hitbox)
-    player2.action(screen, player1.hitbox)
+    player1.action(screen, player2.hitbox, player2.attacking)
+    player2.action(screen, player1.hitbox, player1.attacking)
 
     # if any player attacks, check to see if the attack has landed
     if player1.attacking_hitbox.colliderect(player2.hitbox):
         player2.hit = True
     elif player2.attacking_hitbox.colliderect(player1.hitbox):
         player1.hit = True
+
+    playerhealth = [player1.health, player2.health]
+    for x in range(2):
+        messageid = fontstyle.render(str(playerhealth[x]), True, color)
+        message_rectid = messageid.get_rect(topleft = ((x+1) * 200, 300)) # Message container
+        screen.blit(messageid, message_rectid)
 
     pygame.display.flip() # update the screen
     for event in pygame.event.get():
