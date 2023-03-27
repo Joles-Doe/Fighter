@@ -2,6 +2,7 @@ import pygame # Pygame is not a built-in python package, so a 'pip install pygam
 import os
 import sys
 import random
+import time
 
 class Fighter(object):
     def __init__(self, fighter_name, fighter_information, player):
@@ -37,12 +38,14 @@ class Fighter(object):
         self.jump = False
         self.dead = False
         self.changed_animation = False
+        self.pause_animation = False
 
         self.hitbox_color = (0, 255, 0) # debugging
         self.platform_location = 400
         
         self.player = player
-        self.health = 100
+        self.round_finished = False
+        self.health = 1
 
         self.current_animation = 0
         self.current_animation_step = 0
@@ -74,73 +77,80 @@ class Fighter(object):
         input = pygame.key.get_pressed() #input
 
         # hit
-        if self.hit == True: # check if character has been hit
+        if self.hit == True and self.dead == False: # check if character has been hit
             if self.dohit == False:
                 self.current_animation = 7 # change to hit animation
                 self.hit = False # reset the hit variable
                 self.dohit = True # extra variable necessary in order to complete the animation and not be stuck in a constant hit loop
                 self.health -= 10
+        
+        # death
+        if self.health <= 0: # if the character is below or equal to 0 health
+            if self.dead == False:
+                self.current_animation = 8 # change to death animation
+                self.current_animation_step = 0 # reset animation step
+                self.dead = True
+        else:    
+            # attack
+            if pygame.time.get_ticks() - self.attacking_timer > self.attacking_cooldown: # check if the attack cooldown has finished
+                if input[playerinput_attack1[self.player]]:
+                    if self.jump == True: # cancel the attack if the character is in the air
+                        pass
+                    else:
+                        if self.attacking == True or self.dohit == True: # cancel the attack if the character is already attacking
+                            pass
+                        else:
+                            self.attacking = True
+                            self.current_animation = 1 # change to first attack animation
+                            self.current_animation_step = 0 # reset the animation step
 
-        # attack
-        if pygame.time.get_ticks() - self.attacking_timer > self.attacking_cooldown: # check if the attack cooldown has finished
-            if input[playerinput_attack1[self.player]]:
-                if self.jump == True: # cancel the attack if the character is in the air
+                if input[playerinput_attack2[self.player]]:
+                    if self.jump == True: # cancel the attack if the character is in the air
+                        pass
+                    else:
+                        if self.attacking == True or self.dohit == True: # cancel the attack if the character is already attacking or being hit
+                            pass
+                        else:
+                            self.attacking = True
+                            self.current_animation = 2 # change to second attack animation
+                            self.current_animation_step = 0 # reset the animation step
+
+            # movement
+            if input[playerinput_jump[self.player]]:
+                if self.jump == True or self.dohit == True or self.attacking == True: # cancel the jump if the character is in the air, attacking, or being hit
                     pass
                 else:
-                    if self.attacking == True or self.dohit == True: # cancel the attack if the character is already attacking
-                        pass
-                    else:
-                        self.attacking = True
-                        self.current_animation = 1 # change to first attack animation
-                        self.current_animation_step = 0 # reset the animation step
+                    self.vely -= 40 # set a negative velocity so the character propels upwards
+                    self.jump = True
+                    self.current_animation = 4 # change to jump animation
 
-            if input[playerinput_attack2[self.player]]:
-                if self.jump == True: # cancel the attack if the character is in the air
+            if input[playerinput_left[self.player]] or input[playerinput_right[self.player]]:
+                if self.attacking == True or self.dohit == True: # cancel movement if the character is attacking, or being hit
                     pass
                 else:
-                    if self.attacking == True or self.dohit == True: # cancel the attack if the character is already attacking or being hit
-                        pass
-                    else:
-                        self.attacking = True
-                        self.current_animation = 2 # change to second attack animation
-                        self.current_animation_step = 0 # reset the animation step
-
-        # movement
-        if input[playerinput_jump[self.player]]:
-            if self.jump == True or self.dohit == True or self.attacking == True: # cancel the jump if the character is in the air, attacking, or being hit
-                pass
+                    if input[playerinput_left[self.player]]:
+                        if self.hitbox.left <= 0: # check is character has hit the left border
+                            pass
+                        else:
+                            self.positionx -= self.movement_speed
+                            if self.jump == False: # check if character is on the ground
+                                self.current_animation = 6 # change to running animation
+                    if input[playerinput_right[self.player]]:
+                        if self.hitbox.right >= swidth: # check is character has hit the right border
+                            pass
+                        else:
+                            self.positionx += self.movement_speed
+                            if self.jump == False:
+                                self.current_animation = 6
             else:
-                self.vely -= 40 # set a negative velocity so the character propels upwards
-                self.jump = True
-                self.current_animation = 4 # change to jump animation
-
-        if input[playerinput_left[self.player]] or input[playerinput_right[self.player]]:
-            if self.attacking == True or self.dohit == True: # cancel movement if the character is attacking, or being hit
-                pass
-            else:
-                if input[playerinput_left[self.player]]:
-                    if self.hitbox.left <= 0: # check is character has hit the left border
-                        pass
-                    else:
-                        self.positionx -= self.movement_speed
-                        if self.jump == False: # check if character is on the ground
-                            self.current_animation = 6 # change to running animation
-                if input[playerinput_right[self.player]]:
-                    if self.hitbox.right >= swidth: # check is character has hit the right border
-                        pass
-                    else:
-                        self.positionx += self.movement_speed
-                        if self.jump == False:
-                            self.current_animation = 6
-        else:
-            if self.attacking == True or self.jump == True or self.dohit == True: # check if the character is performing an action
-                pass
-            else:
-                self.current_animation = 0 # change to idle animation
+                if self.attacking == True or self.jump == True or self.dohit == True: # check if the character is performing an action
+                    pass
+                else:
+                    self.current_animation = 0 # change to idle animation
         
         self.vely += self.gravity # apply gravity
         if self.vely >= 0: # check if character has positive velocity
-            if self.jump == True: # check if character has jumped
+            if self.jump == True and self.dead == False: # check if character has jumped
                 self.current_animation = 5 # change to falling animation
                 self.changed_animation = True
 
@@ -163,21 +173,28 @@ class Fighter(object):
         # set sprite
         self.animation_done = self.current_animation_step > self.fighter_information[f'{self.fighter_name}_sprite_steps'][self.current_animation] - 1 # check if the animation is finished
         if self.animation_done == True:
-            if self.attacking == True:
+            if self.attacking == True and self.dead == False:
                 self.current_animation = 0 # change to idle animation
-            self.current_animation_step = 0 # reset the animation step to 0
-        if enemy_attacking == False and self.dohit == True:
+                self.current_animation_step = 0 # reset the animation step to 0
+            elif self.dead == False:
+                self.current_animation_step = 0 # reset the animation step to 0
+            elif self.dead == True:
+                self.current_animation_step -= 1
+                self.pause_animation = True
+            
+        if enemy_attacking == False and self.dohit == True and self.dead == False:
             self.hit = False
             self.dohit = False
             self.current_animation = 0
             
-
         sprite_surface = self.animations[self.current_animation][self.current_animation_step] # grabs the current frame
-        sprite_surface = pygame.transform.flip(sprite_surface, self.flip, False) # flips the frame if necessary
+        if self.dead == False:
+            sprite_surface = pygame.transform.flip(sprite_surface, self.flip, False) # flips the frame if necessary
 
-        if pygame.time.get_ticks() - self.update_tick > self.animation_delay: # check if animation needs to progress
-            self.current_animation_step += 1 # move to the next frame
-            self.update_tick = pygame.time.get_ticks() # reset the animation timer
+        if self.pause_animation == False: # if the animation doesn't need to be puased
+            if pygame.time.get_ticks() - self.update_tick > self.animation_delay: # check if animation needs to progress
+                self.current_animation_step += 1 # move to the next frame
+                self.update_tick = pygame.time.get_ticks() # reset the animation timer
 
         # draw
         # pygame.draw.rect(surface, self.hitbox_color, self.hitbox) # draws the character's hitbox
@@ -201,6 +218,9 @@ class Fighter(object):
         sprite_rect.center = (self.hitbox.center[0] + self.fighter_information[f'{self.fighter_name}_offset'][0], self.hitbox.center[1] + self.fighter_information[f'{self.fighter_name}_offset'][1]) # offsets the sprite in order for it to be in it's hitbox
 
         surface.blit(sprite_surface, sprite_rect) # blit character to the screen
+
+        if self.dead == True and self.animation_done == True: # if the character has died and have finished their animation
+            self.round_finished = True
 
 
 global sourcedirectory
@@ -259,39 +279,59 @@ fighter_information = {
     'shinobi_offset': [0, 2]
 }
 
-
-player1 = Fighter('nomad', fighter_information, player=0)
-player1.positionx = 200
-
-player2 = Fighter('squire', fighter_information, player=1)
-player2.positionx = 400
-player2.hitbox_color = (255, 0, 255)
-
+player1score, player2score = 0, 0
 game_active = True
 while (game_active == True):
-    clock.tick(FPS)
+    round = True
+    endround = False
+    player1 = Fighter('nomad', fighter_information, player=0)
+    player1.positionx = 200
+    player2 = Fighter('squire', fighter_information, player=1)
+    player2.positionx = 400
 
-    screen.blit(current_background, current_background_rect) # add the background 
+    while (round == True):
+        clock.tick(FPS)
 
-    player1.action(screen, player2.hitbox, player2.attacking)
-    player2.action(screen, player1.hitbox, player1.attacking)
+        screen.blit(current_background, current_background_rect) # add the background 
 
-    # if any player attacks, check to see if the attack has landed
-    if player1.attacking_hitbox.colliderect(player2.hitbox):
-        player2.hit = True
-    elif player2.attacking_hitbox.colliderect(player1.hitbox):
-        player1.hit = True
+        player1.action(screen, player2.hitbox, player2.attacking)
+        player2.action(screen, player1.hitbox, player1.attacking)
 
-    playerhealth = [player1.health, player2.health]
-    for x in range(2):
-        messageid = fontstyle.render(str(playerhealth[x]), True, color)
-        message_rectid = messageid.get_rect(topleft = ((x+1) * 200, 300)) # Message container
-        screen.blit(messageid, message_rectid)
+        # if any player attacks, check to see if the attack has landed
+        if player1.attacking_hitbox.colliderect(player2.hitbox):
+            player2.hit = True
+        elif player2.attacking_hitbox.colliderect(player1.hitbox):
+            player1.hit = True
 
-    pygame.display.flip() # update the screen
-    for event in pygame.event.get():
+        playerhealth = [player1.health, player2.health]
+        for x in range(2):
+            messageid = fontstyle.render(str(playerhealth[x]), True, color)
+            message_rectid = messageid.get_rect(topleft = ((x+1) * 200, 300)) # Message container
+            screen.blit(messageid, message_rectid)
 
-        if event.type == pygame.QUIT:
-            game_active = False
-            pygame.quit()
-            sys.exit
+        if player1.round_finished == True or player2.round_finished == True or endround == True:
+            if player1.round_finished == True:
+                player1.round_finished = False
+                player2score += 1
+                endround_timer = pygame.time.get_ticks()
+            elif player2.round_finished == True:
+                player2.round_finished = False
+                player1score += 1
+                endround_timer = pygame.time.get_ticks()
+            endround = True
+
+            if pygame.time.get_ticks() - endround_timer > 5000:
+                round = False
+            messageid = fontstyle.render('ROUND END', True, color)
+            message_rectid = messageid.get_rect(topleft = (300, 100)) # Message container
+            screen.blit(messageid, message_rectid)
+
+
+
+        pygame.display.flip() # update the screen    
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                game_active = False
+                pygame.quit()
+                sys.exit
