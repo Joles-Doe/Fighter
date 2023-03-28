@@ -222,6 +222,61 @@ class Fighter(object):
         if self.dead == True and self.animation_done == True: # if the character has died and have finished their animation
             self.round_finished = True
 
+class background(object):
+    def __init__(self, current_background, fighter_information):
+        self.fighter_colours = {
+            'squire': fighter_information['squire_heartcolour'],
+            'huntress': fighter_information['huntress_heartcolour'],
+            'nomad': fighter_information['nomad_heartcolour'],
+            'shinobi': fighter_information['shinobi_heartcolour']
+        }
+
+        self.background = current_background
+        self.background_rect = self.background.get_rect()
+
+        self.player1heart = None
+        self.player1heart_rect = None
+        self.player1_healthbar_colour = None
+
+        self.player2heart = None
+        self.player2heart_rect = None
+        self.player1_healthbar_colour = None
+    
+    def draw_objects(self, player1fighter_name, player2fighter_name):
+        if self.player1heart is None and self.player2heart is None:
+            self.player1heart = pygame.image.load(os.path.join(sourcedirectory, f'Data/Sprites/{player1fighter_name}/Heart.png')).convert_alpha()
+            self.player1heart_rect = self.player1heart.get_rect()
+            self.player1heart = pygame.transform.scale(self.player1heart, (self.player1heart_rect.width - 70, self.player1heart_rect.height - 70))
+            self.player1heart_rect = self.player1heart.get_rect()
+
+            self.player2heart = pygame.image.load(os.path.join(sourcedirectory, f'Data/Sprites/{player2fighter_name}/Heart.png')).convert_alpha()
+            self.player2heart_rect = self.player2heart.get_rect()
+            self.player2heart = pygame.transform.scale(self.player2heart, (self.player2heart_rect.width - 70, self.player2heart_rect.height - 70))
+            self.player2heart = pygame.transform.flip(self.player2heart, True, False)
+            self.player2heart_rect = self.player1heart.get_rect()
+
+            self.player1heart_rect.topleft = (20, 20)
+            self.player2heart_rect.topright = (720, 20)
+
+            self.player1_healthbar = pygame.Rect(0, 0, 250, 45)
+            self.player1_healthbar.bottomleft = (80, 85)
+            self.player1_healthbar_colour = self.fighter_colours[player1fighter_name]
+
+            self.player2_healthbar = pygame.Rect(0, 0, 250, 45)
+            self.player2_healthbar.bottomright = (660, 85)
+            self.player2_healthbar_colour = self.fighter_colours[player2fighter_name]
+            
+        screen.fill((255, 255, 255))
+        screen.blit(self.background, self.background_rect) # add the background
+
+        #player 1
+        pygame.draw.rect(screen, self.player1_healthbar_colour, self.player1_healthbar)
+        screen.blit(self.player1heart, self.player1heart_rect)
+
+        #player 2
+        pygame.draw.rect(screen, self.player2_healthbar_colour, self.player2_healthbar)
+        screen.blit(self.player2heart,  self.player2heart_rect)
+
 
 global sourcedirectory
 sourcedirectory = os.path.dirname(os.path.abspath(__file__)) # grabs directory of the file
@@ -257,30 +312,31 @@ fighter_information = {
     'squire_hitbox': [56, 48, 23, 37, 3],
     'squire_atk_hitbox': [67, 48],
     'squire_offset': [0, 0],
+    'squire_heartcolour': [30, 53, 126],
 
     'huntress_sprite_steps': [8, 5, 5, 7, 2, 2, 8, 3, 8],
     'huntress_spriteframe_info': [150, 150],
     'huntress_hitbox': [65, 58, 17, 38, 3],
     'huntress_atk_hitbox': [60, 65],
     'huntress_offset': [2, -8],
+    'huntress_heartcolour': [81, 80, 27],
 
     'nomad_sprite_steps': [10, 7, 7, 8, 3, 3, 8, 3, 7],
     'nomad_spriteframe_info': [162, 162],
     'nomad_hitbox': [72, 56, 20, 44, 3.3],
     'nomad_atk_hitbox': [60, 50],
     'nomad_offset': [-4, 7],
+    'nomad_heartcolour': [13, 34, 27],
 
     'shinobi_sprite_steps': [8, 6, 6, 4, 2, 2, 8, 4, 6],
     'shinobi_spriteframe_info': [200, 200],
     'shinobi_hitbox': [87, 76, 23, 45, 2.8],
     'shinobi_atk_hitbox': [90, 50],
-    'shinobi_offset': [0, 2]
+    'shinobi_offset': [0, 2],
+    'shinobi_heartcolour': [159, 43, 43]
 }
 
-def draw_objects(current_background, current_background_rect):
-    screen.fill((255, 255, 255))
-    screen.blit(current_background, current_background_rect) # add the background
-
+gui = background(current_background, fighter_information)
 player1score, player2score = 0, 0
 game_active = True
 while (game_active == True):
@@ -294,7 +350,7 @@ while (game_active == True):
     while (round == True):
         clock.tick(FPS)
  
-        draw_objects(current_background, current_background.get_rect())
+        gui.draw_objects(player1.fighter_name, player2.fighter_name)
 
         player1.action(screen, player2.hitbox, player2.attacking)
         player2.action(screen, player1.hitbox, player1.attacking)
