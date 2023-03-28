@@ -5,7 +5,7 @@ import random
 import time
 
 class Fighter(object):
-    def __init__(self, fighter_name, fighter_information, player):
+    def __init__(self, fighter_name, fighter_information, platform_position, player):
         self.fighter_name = fighter_name
         self.fighter_information = fighter_information
 
@@ -20,7 +20,7 @@ class Fighter(object):
             self.animations.append(self.animation_loop)
 
         self.positionx = 0
-        self.positiony = 300
+        self.positiony = platform_position
         self.gravity = 3
         self.vely = 0
         self.flip = False
@@ -41,11 +41,11 @@ class Fighter(object):
         self.pause_animation = False
 
         self.hitbox_color = (0, 255, 0) # debugging
-        self.platform_location = 400
+        self.platform_location = platform_position
         
         self.player = player
         self.round_finished = False
-        self.health = 1
+        self.health = 100
 
         self.current_animation = 0
         self.current_animation_step = 0
@@ -240,11 +240,9 @@ color = (255, 255, 255)
 clock = pygame.time.Clock()
 FPS = 60
 
-backgrounds = ['construction', 'forest', 'japan_coast']
-random_background = random.randint(0, 2)
-current_background = pygame.image.load(os.path.join(sourcedirectory, f'Data/Background/{backgrounds[random_background]}.gif')).convert_alpha()
-current_background_rect = current_background.get_rect()
-current_background_rect.midbottom = ((swidth / 2), 500)
+backgrounds = ['sunset.jpg', 665, 'grassland.png', 620, 'coast.png', 630]
+random_background = random.choice([0, 2, 4])
+current_background = pygame.image.load(os.path.join(sourcedirectory, f'Data/Background/{backgrounds[random_background]}')).convert_alpha()
 
 
 # Sprite information for each character
@@ -279,20 +277,24 @@ fighter_information = {
     'shinobi_offset': [0, 2]
 }
 
+def draw_objects(current_background, current_background_rect):
+    screen.fill((255, 255, 255))
+    screen.blit(current_background, current_background_rect) # add the background
+
 player1score, player2score = 0, 0
 game_active = True
 while (game_active == True):
     round = True
     endround = False
-    player1 = Fighter('nomad', fighter_information, player=0)
-    player1.positionx = 200
-    player2 = Fighter('squire', fighter_information, player=1)
-    player2.positionx = 400
+    player1 = Fighter('nomad', fighter_information, backgrounds[random_background + 1], player=0)
+    player1.positionx = 150
+    player2 = Fighter('squire', fighter_information, backgrounds[random_background + 1], player=1)
+    player2.positionx = 590
 
     while (round == True):
         clock.tick(FPS)
-
-        screen.blit(current_background, current_background_rect) # add the background 
+ 
+        draw_objects(current_background, current_background.get_rect())
 
         player1.action(screen, player2.hitbox, player2.attacking)
         player2.action(screen, player1.hitbox, player1.attacking)
