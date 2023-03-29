@@ -240,40 +240,64 @@ class background(object):
 
         self.player2heart = None
         self.player2heart_rect = None
-        self.player1_healthbar_colour = None
+        self.player2_healthbar_colour = None
+
+        self.player1_maxhealth = None
+        self.player1_health = None
+        self.player2_maxhealth = None
+        self.player2_health = None
     
-    def draw_objects(self, player1fighter_name, player2fighter_name):
-        if self.player1heart is None and self.player2heart is None:
+    def draw_objects(self, player1fighter_name, player2fighter_name, player1health, player2health):
+        if self.player1heart is None and self.player2heart is None: # If the heart images haven't been set yet
             self.player1heart = pygame.image.load(os.path.join(sourcedirectory, f'Data/Sprites/{player1fighter_name}/Heart.png')).convert_alpha()
-            self.player1heart_rect = self.player1heart.get_rect()
+            self.player1heart_rect = self.player1heart.get_rect() # Grab the heart and scale it
             self.player1heart = pygame.transform.scale(self.player1heart, (self.player1heart_rect.width - 70, self.player1heart_rect.height - 70))
             self.player1heart_rect = self.player1heart.get_rect()
 
             self.player2heart = pygame.image.load(os.path.join(sourcedirectory, f'Data/Sprites/{player2fighter_name}/Heart.png')).convert_alpha()
-            self.player2heart_rect = self.player2heart.get_rect()
+            self.player2heart_rect = self.player2heart.get_rect() # Grab the second heart, scale it, and flip it
             self.player2heart = pygame.transform.scale(self.player2heart, (self.player2heart_rect.width - 70, self.player2heart_rect.height - 70))
             self.player2heart = pygame.transform.flip(self.player2heart, True, False)
-            self.player2heart_rect = self.player1heart.get_rect()
+            self.player2heart_rect = self.player2heart.get_rect()
 
-            self.player1heart_rect.topleft = (20, 20)
+            self.player1heart_rect.topleft = (20, 20) # Change the location of the hearts
             self.player2heart_rect.topright = (720, 20)
 
             self.player1_healthbar = pygame.Rect(0, 0, 250, 45)
-            self.player1_healthbar.bottomleft = (80, 85)
+            self.player1_healthbar.bottomleft = (80, 85) # Create the max healthbar, and the regular healthbar
             self.player1_healthbar_colour = self.fighter_colours[player1fighter_name]
+            self.player1_maxhealthbar = pygame.Rect(0, 0, 250, 45)
+            self.player1_maxhealthbar.bottomleft = (80, 85)
 
             self.player2_healthbar = pygame.Rect(0, 0, 250, 45)
             self.player2_healthbar.bottomright = (660, 85)
             self.player2_healthbar_colour = self.fighter_colours[player2fighter_name]
-            
+            self.player2_maxhealthbar = pygame.Rect(0, 0, 250, 45)
+            self.player2_maxhealthbar.bottomright = (660, 85)
+
+            self.player1_maxhealth = player1health # Set the maximum health for both players
+            self.player2_maxhealth = player2health
+
+        self.player1_health = player1health # Define both player's health
+        self.player2_health = player2health
+
+        self.player1_healthpercentage = (self.player1_health / self.player1_maxhealth) * 100 # Find out the percentage of each player's health is left
+        self.player2_healthpercentage = (self.player2_health / self.player2_maxhealth) * 100
+
+        self.player1_healthbar.width = self.player1_maxhealthbar.width * (self.player1_healthpercentage / 100) # Change the width of each rectangle to show the health
+        self.player2_healthbar.width = self.player2_maxhealthbar.width * (self.player2_healthpercentage / 100)
+        self.player2_healthbar.bottomright = (660, 85) # Move the second rectangle so that the damage doesn't appear from the right
+        
         screen.fill((255, 255, 255))
         screen.blit(self.background, self.background_rect) # add the background
 
         #player 1
-        pygame.draw.rect(screen, self.player1_healthbar_colour, self.player1_healthbar)
-        screen.blit(self.player1heart, self.player1heart_rect)
+        pygame.draw.rect(screen, (255, 255, 255), self.player1_maxhealthbar) # Draw the white healthbar
+        pygame.draw.rect(screen, self.player1_healthbar_colour, self.player1_healthbar) # Draw the healthbar
+        screen.blit(self.player1heart, self.player1heart_rect) # Blit the heart
 
         #player 2
+        pygame.draw.rect(screen, (255, 255, 255), self.player2_maxhealthbar)
         pygame.draw.rect(screen, self.player2_healthbar_colour, self.player2_healthbar)
         screen.blit(self.player2heart,  self.player2heart_rect)
 
@@ -350,7 +374,7 @@ while (game_active == True):
     while (round == True):
         clock.tick(FPS)
  
-        gui.draw_objects(player1.fighter_name, player2.fighter_name)
+        gui.draw_objects(player1.fighter_name, player2.fighter_name, player1.health, player2.health)
 
         player1.action(screen, player2.hitbox, player2.attacking)
         player2.action(screen, player1.hitbox, player1.attacking)
