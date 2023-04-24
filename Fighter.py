@@ -2,7 +2,6 @@ import pygame # Pygame is not a built-in python package, so a 'pip install pygam
 import os
 import sys
 import random
-import time
 
 class Fighter(object):
     def __init__(self, fighter_name, fighter_information, platform_position, player):
@@ -310,6 +309,7 @@ global swidth, sheight
 swidth, sheight = 740, 740
 screen = pygame.display.set_mode((swidth, sheight)) # width, height of the screen
 pygame.scrap.init() ### Scrap can only be initialised after the display set mode command has been done
+pygame.mixer.init() # Music module
 # pygame.key.set_repeat(500, 50) # allows keys to be held
 
 
@@ -318,10 +318,6 @@ color = (255, 255, 255)
 
 clock = pygame.time.Clock()
 FPS = 60
-
-backgrounds = ['sunset.jpg', 665, 'grassland.png', 620, 'coast.png', 630]
-random_background = random.choice([0, 2, 4])
-current_background = pygame.image.load(os.path.join(sourcedirectory, f'Data/Background/{backgrounds[random_background]}')).convert_alpha()
 
 
 # Sprite information for each character
@@ -360,60 +356,117 @@ fighter_information = {
     'shinobi_heartcolour': [159, 43, 43]
 }
 
-gui = background(current_background, fighter_information)
-player1score, player2score = 0, 0
-game_active = True
-while (game_active == True):
-    round = True
-    endround = False
-    player1 = Fighter('nomad', fighter_information, backgrounds[random_background + 1], player=0)
-    player1.positionx = 150
-    player2 = Fighter('squire', fighter_information, backgrounds[random_background + 1], player=1)
-    player2.positionx = 590
 
-    while (round == True):
-        clock.tick(FPS)
- 
-        gui.draw_objects(player1.fighter_name, player2.fighter_name, player1.health, player2.health)
+def main_game(chosen_fighters):
+    backgrounds = ['sunset.jpg', 665, 'grassland.png', 620, 'coast.png', 630]
+    random_background = random.choice([0, 2, 4])
+    current_background = pygame.image.load(os.path.join(sourcedirectory, f'Data/Background/{backgrounds[random_background]}')).convert_alpha()
+    gui = background(current_background, fighter_information)
+    player1score, player2score = 0, 0
+    game_active = True
+    while (game_active == True):
+        round = True
+        endround = False
+        player1 = Fighter(chosen_fighters[0], fighter_information, backgrounds[random_background + 1], player=0)
+        player1.positionx = 150
+        player2 = Fighter(chosen_fighters[1], fighter_information, backgrounds[random_background + 1], player=1)
+        player2.positionx = 590
 
-        player1.action(screen, player2.hitbox, player2.attacking)
-        player2.action(screen, player1.hitbox, player1.attacking)
+        while (round == True):
+            clock.tick(FPS)
+    
+            gui.draw_objects(player1.fighter_name, player2.fighter_name, player1.health, player2.health)
 
-        # if any player attacks, check to see if the attack has landed
-        if player1.attacking_hitbox.colliderect(player2.hitbox):
-            player2.hit = True
-        elif player2.attacking_hitbox.colliderect(player1.hitbox):
-            player1.hit = True
+            player1.action(screen, player2.hitbox, player2.attacking)
+            player2.action(screen, player1.hitbox, player1.attacking)
 
-        playerhealth = [player1.health, player2.health]
-        for x in range(2):
-            messageid = fontstyle.render(str(playerhealth[x]), True, color)
-            message_rectid = messageid.get_rect(topleft = ((x+1) * 200, 300)) # Message container
-            screen.blit(messageid, message_rectid)
+            # if any player attacks, check to see if the attack has landed
+            if player1.attacking_hitbox.colliderect(player2.hitbox):
+                player2.hit = True
+            elif player2.attacking_hitbox.colliderect(player1.hitbox):
+                player1.hit = True
 
-        if player1.round_finished == True or player2.round_finished == True or endround == True:
-            if player1.round_finished == True:
-                player1.round_finished = False
-                player2score += 1
-                endround_timer = pygame.time.get_ticks()
-            elif player2.round_finished == True:
-                player2.round_finished = False
-                player1score += 1
-                endround_timer = pygame.time.get_ticks()
-            endround = True
+            playerhealth = [player1.health, player2.health]
+            for x in range(2):
+                messageid = fontstyle.render(str(playerhealth[x]), True, color)
+                message_rectid = messageid.get_rect(topleft = ((x+1) * 200, 300)) # Message container
+                screen.blit(messageid, message_rectid)
 
-            if pygame.time.get_ticks() - endround_timer > 5000:
-                round = False
-            messageid = fontstyle.render('ROUND END', True, color)
-            message_rectid = messageid.get_rect(topleft = (300, 100)) # Message container
-            screen.blit(messageid, message_rectid)
+            if player1.round_finished == True or player2.round_finished == True or endround == True:
+                if player1.round_finished == True:
+                    player1.round_finished = False
+                    player2score += 1
+                    endround_timer = pygame.time.get_ticks()
+                elif player2.round_finished == True:
+                    player2.round_finished = False
+                    player1score += 1
+                    endround_timer = pygame.time.get_ticks()
+                endround = True
+
+                if pygame.time.get_ticks() - endround_timer > 5000:
+                    round = False
+                messageid = fontstyle.render('ROUND END', True, color)
+                message_rectid = messageid.get_rect(topleft = (300, 100)) # Message container
+                screen.blit(messageid, message_rectid)
 
 
 
-        pygame.display.flip() # update the screen    
+            pygame.display.flip() # update the screen    
+            for event in pygame.event.get():
+
+                if event.type == pygame.QUIT:
+                    game_active = False
+                    pygame.quit()
+                    sys.exit()
+
+def main_menu():
+    menu_music = pygame.mixer.Sound(os.path.join(sourcedirectory, 'Data/Music/menu.mp3'))
+    menu_music.set_volume(0.15)
+    menu_music.play(-1)
+
+    mm_background = pygame.image.load(os.path.join(sourcedirectory, 'Data/Background/menu.png'))
+    font_style = pygame.font.SysFont(None, 90)
+    while True:
+        mouse = pygame.mouse.get_pos()
+        screen.blit(mm_background, (0, 0))
+        messageid = font_style.render('START', True, (255, 255, 255))
+        message_rectid = messageid.get_rect(center = (370, 250)) # Message container
+        screen.blit(messageid, message_rectid)
+
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed()[0]:
+                    if message_rectid.collidepoint(mouse[0], mouse[1]):
+                        return menu_music
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+def select_characters(menu_music, fighter_information):
+    character_names = ['squire', 'huntress', 'nomad', 'shinobi']
+    idle_list = []
+    for x in range(4):
+        spritesheet_loop = pygame.image.load(os.path.join(sourcedirectory, f'Data/Sprites/{character_names[x]}/Idle.png')).convert_alpha()
+        frame_width, frame_height = fighter_information[f'{character_names[x]}_spriteframe_info'][0], fighter_information[f'{character_names[x]}_spriteframe_info'][1]
+        imagelist = []
+        for y in range(fighter_information[f'{character_names[x]}_sprite_steps'][0]):
+            image = pygame.Surface((frame_width, frame_height), pygame.SRCALPHA)
+            image.blit(spritesheet_loop, (0, 0), ((y * frame_width), 0, frame_width, frame_height))
+            imagelist.append(image)
+        idle_list.append(imagelist)
+
+    while True:
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
-                game_active = False
                 pygame.quit()
-                sys.exit
+                sys.exit()
+
+
+
+
+music = main_menu()
+chosen_fighters = select_characters(music, fighter_information)
+main_game(chosen_fighters)
