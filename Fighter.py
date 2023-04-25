@@ -364,7 +364,10 @@ def main_game(chosen_fighters):
     gui = background(current_background, fighter_information)
     player1score, player2score = 0, 0
     game_active = True
+
+    menu_music.stop()
     while (game_active == True):
+        fight_music.play(-1)
         round = True
         endround = False
         player1 = Fighter(chosen_fighters[0], fighter_information, backgrounds[random_background + 1], player=0)
@@ -405,6 +408,7 @@ def main_game(chosen_fighters):
 
                 if pygame.time.get_ticks() - endround_timer > 5000:
                     round = False
+                    fight_music.stop()
                 messageid = fontstyle.render('ROUND END', True, color)
                 message_rectid = messageid.get_rect(topleft = (300, 100)) # Message container
                 screen.blit(messageid, message_rectid)
@@ -420,10 +424,6 @@ def main_game(chosen_fighters):
                     sys.exit()
 
 def main_menu():
-    menu_music = pygame.mixer.Sound(os.path.join(sourcedirectory, 'Data/Music/menu.mp3'))
-    menu_music.set_volume(0.15)
-    menu_music.play(-1)
-
     mm_background = pygame.image.load(os.path.join(sourcedirectory, 'Data/Background/menu.png'))
     font_style = pygame.font.SysFont(None, 90)
     while True:
@@ -438,13 +438,13 @@ def main_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed()[0]:
                     if message_rectid.collidepoint(mouse[0], mouse[1]):
-                        return menu_music
+                        return
 
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-def select_characters(menu_music, fighter_information):
+def select_characters(fighter_information):
     character_names = ['squire', 'huntress', 'nomad', 'shinobi']
     idle_list = []
     for x in range(4):
@@ -464,9 +464,16 @@ def select_characters(menu_music, fighter_information):
                 pygame.quit()
                 sys.exit()
 
+global menu_music, fight_music
+menu_music = pygame.mixer.Sound(os.path.join(sourcedirectory, 'Data/Music/menu.mp3'))
+menu_music.set_volume(0.15)
+menu_music.play(-1)
+
+fight_music = pygame.mixer.Sound(os.path.join(sourcedirectory, 'Data/Music/fight.wav'))
+fight_music.set_volume(0.15)
 
 
-
-music = main_menu()
-chosen_fighters = select_characters(music, fighter_information)
+main_menu()
+# chosen_fighters = select_characters(music, fighter_information)
+chosen_fighters = ['squire', 'nomad']
 main_game(chosen_fighters)
