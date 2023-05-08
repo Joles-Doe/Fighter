@@ -445,8 +445,31 @@ def main_menu():
                 sys.exit()
 
 def select_characters(fighter_information):
+    def select_screen(idle_list, idle_steps, mouse, player1chosen):
+        font_style = pygame.font.SysFont(None, 70)
+        screen.fill((0, 0, 0))
+
+        if player1chosen == False:
+            messageid = font_style.render('Player 1, choose your fighter!', True, (255, 255, 255))
+        else:
+            messageid = font_style.render('Player 2, choose your fighter!', True, (255, 255, 255))
+        message_rectid = messageid.get_rect(center = (370, 50)) # Message container
+        screen.blit(messageid, message_rectid)
+
+        rect_width, rect_height = 300, 300
+        TL_rect = pygame.Rect(50, 100, rect_width, rect_height)
+        TR_rect = pygame.Rect(690 - rect_width, 100, rect_width, rect_height)
+        BL_rect = pygame.Rect(50, 125 + rect_height, rect_width, rect_height)
+        BR_rect = pygame.Rect(690 - rect_width, 125 + rect_height, rect_width, rect_height)
+
+        debug_loop = [TL_rect, TR_rect, BL_rect, BR_rect]
+        for x in range(4):
+            pygame.draw.rect(screen, (255, 0, 255), debug_loop[x])
+
+
     character_names = ['squire', 'huntress', 'nomad', 'shinobi']
     idle_list = []
+    idle_steps = []
     for x in range(4):
         spritesheet_loop = pygame.image.load(os.path.join(sourcedirectory, f'Data/Sprites/{character_names[x]}/Idle.png')).convert_alpha()
         frame_width, frame_height = fighter_information[f'{character_names[x]}_spriteframe_info'][0], fighter_information[f'{character_names[x]}_spriteframe_info'][1]
@@ -456,8 +479,14 @@ def select_characters(fighter_information):
             image.blit(spritesheet_loop, (0, 0), ((y * frame_width), 0, frame_width, frame_height))
             imagelist.append(image)
         idle_list.append(imagelist)
+        idle_steps.append(fighter_information[f'{character_names[x]}_sprite_steps'][0])
 
+    chosen_fighters = []
+    player1chosen, player2chosen = False, False
     while True:
+        mouse = pygame.mouse.get_pos()
+        chosen = select_screen(idle_list, idle_steps, mouse, player1chosen)
+        pygame.display.flip()
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
@@ -474,6 +503,6 @@ fight_music.set_volume(0.15)
 
 
 main_menu()
-# chosen_fighters = select_characters(music, fighter_information)
+chosen_fighters = select_characters(fighter_information)
 chosen_fighters = ['squire', 'nomad']
 main_game(chosen_fighters)
